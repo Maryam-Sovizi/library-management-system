@@ -1,0 +1,25 @@
+-- کتاب‌های موجود
+CREATE VIEW available_books AS
+SELECT b.id, b.title, b.isbn, c.name AS category, 
+       b.available_copies, b.total_copies
+FROM books b
+LEFT JOIN categories c ON b.category_id = c.id
+WHERE b.available_copies > 0 AND b.is_active = TRUE;
+
+-- امانت‌های معوق
+CREATE VIEW overdue_loans AS
+SELECT l.id, b.title, u.full_name AS member_name, 
+       l.loan_date, l.due_date,
+       CURRENT_DATE - l.due_date AS days_overdue
+FROM loans l
+JOIN books b ON l.book_id = b.id
+JOIN users u ON l.member_id = u.id
+WHERE l.status = 'borrowed' AND l.due_date < CURRENT_DATE;
+
+-- آمار کلی کتابخانه
+CREATE VIEW library_stats AS
+SELECT 
+    (SELECT COUNT(*) FROM books WHERE is_active) AS total_books,
+    (SELECT SUM(available_copies) FROM books) AS total_available,
+    (SELECT COUNT(*) FROM loans WHERE status = 'borrowed') AS active_loans,
+    (SELECT COUNT(*) FROM loans WHERE status = 'borrowed' AND due_date < CURRENT_DATE) AS overdue_count;

@@ -1,0 +1,33 @@
+CREATE OR REPLACE FUNCTION borrow_book(
+    p_book_id INT,
+    p_member_id INT,
+    p_loan_days INT DEFAULT 14
+)
+RETURNS INT AS $$
+DECLARE
+    v_loan_id INT;
+    v_available INT;
+BEGIN
+    -- بررسی موجودی
+    SELECT available_copies INTO v_available
+    FROM books WHERE id = p_book_id AND is_active = TRUE;
+
+    IF v_available IS NULL OR v_available <= 0 THEN
+        RAISE EXCEPTION 'کتاب موجود نیست';
+    END IF;
+
+    -- بررسی اینکه عضو فعال باشد
+    IF NOT EXISTS (
+        SELECT 1 FROM users 
+        WHERE id = p_member_id AND role = 'member' AND is_active = TRUE
+    ) THEN
+        RAISE EXCEPTION 'عضو معتبر نیست';
+    END IF;
+
+    INSERT INTO loans (book_id, member_id, due_date)
+    VALUES (p_book_id, p_member_id, CURRENT_DATE + p_loan_days)
+    RETURNING id INTO v_loan_id;
+
+    RETURN v_loan_id;
+END;
+$$ LANGUAGE plpgsql;

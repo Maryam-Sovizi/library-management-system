@@ -1,0 +1,6 @@
+CREATE INDEX idx_books_title ON books(title);
+CREATE INDEX idx_books_isbn ON books(isbn);
+CREATE INDEX idx_loans_member ON loans(member_id);
+CREATE INDEX idx_loans_status ON loans(status);
+CREATE INDEX idx_loans_due_date ON loans(due_date);
+CREATE INDEX idx_books_extra_info ON books USING GIN (extra_info); 

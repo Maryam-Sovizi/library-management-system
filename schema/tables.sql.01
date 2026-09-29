@@ -1,0 +1,86 @@
+
+جداول اصلی :
+-- کاربران سیستم (کتابدار و اعضا)
+CREATE TABLE users (
+    id              SERIAL PRIMARY KEY,
+    full_name       VARCHAR(100) NOT NULL,
+    email           VARCHAR(150) UNIQUE NOT NULL,
+    phone           VARCHAR(20),
+    role            VARCHAR(20) NOT NULL CHECK (role IN ('member', 'librarian', 'admin')),
+    membership_date DATE DEFAULT CURRENT_DATE,
+    is_active       BOOLEAN DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- نویسندگان
+CREATE TABLE authors (
+    id          SERIAL PRIMARY KEY,
+    full_name   VARCHAR(150) NOT NULL,
+    nationality VARCHAR(50),
+    birth_year  INT,
+    bio         TEXT
+);
+
+-- دسته‌بندی‌ها
+CREATE TABLE categories (
+    id          SERIAL PRIMARY KEY,
+    name        VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT
+);
+
+-- کتاب‌ها
+CREATE TABLE books (
+    id                  SERIAL PRIMARY KEY,
+    title               VARCHAR(255) NOT NULL,
+    isbn                VARCHAR(20) UNIQUE,
+    publication_year    INT,
+    publisher           VARCHAR(150),
+    total_copies        INT NOT NULL CHECK (total_copies >= 0),
+    available_copies    INT NOT NULL CHECK (available_copies >= 0),
+    category_id         INT REFERENCES categories(id),
+    language            VARCHAR(50) DEFAULT 'Persian',
+    pages               INT,
+    extra_info          JSONB,          -- برای اطلاعات اضافی مثل ترجمه، جوایز و ...
+    is_active           BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT chk_available_copies 
+        CHECK (available_copies <= total_copies)
+);
+
+-- رابطه چندبه‌چند کتاب و نویسنده
+CREATE TABLE book_authors (
+    book_id     INT REFERENCES books(id) ON DELETE CASCADE,
+    author_id   INT REFERENCES authors(id) ON DELETE CASCADE,
+    PRIMARY KEY (book_id, author_id)
+);
+
+-- امانت‌ها (Loans)
+CREATE TABLE loans (
+    id              SERIAL PRIMARY KEY,
+    book_id         INT NOT NULL REFERENCES books(id),
+    member_id       INT NOT NULL REFERENCES users(id),
+    loan_date       DATE NOT NULL DEFAULT CURRENT_DATE,
+    due_date        DATE NOT NULL,
+    return_date     DATE,
+    status          VARCHAR(20) NOT NULL DEFAULT 'borrowed' 
+                    CHECK (status IN ('borrowed', 'returned', 'overdue', 'lost')),
+    fine_amount     DECIMAL(10,2) DEFAULT 0,
+    notes           TEXT,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT chk_due_date CHECK (due_date > loan_date)
+);
+
+-- جریمه‌ها (اختیاری ولی حرفه‌ای)
+CREATE TABLE fines (
+    id          SERIAL PRIMARY KEY,
+    loan_id     INT NOT NULL REFERENCES loans(id),
+    amount      DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+    reason      VARCHAR(255),
+    paid        BOOLEAN DEFAULT FALSE,
+    paid_at     TIMESTAMP,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
