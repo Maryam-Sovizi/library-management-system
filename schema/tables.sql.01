@@ -74,7 +74,7 @@ CREATE TABLE loans (
     CONSTRAINT chk_due_date CHECK (due_date > loan_date)
 );
 
--- جریمه‌ها (اختیاری ولی حرفه‌ای)
+-- جریمه‌ها
 CREATE TABLE fines (
     id          SERIAL PRIMARY KEY,
     loan_id     INT NOT NULL REFERENCES loans(id),
